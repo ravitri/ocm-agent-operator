@@ -1,0 +1,24 @@
+# permissions for end users to edit ocmagents.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ocmagent-editor-role
+rules:
+- apiGroups:
+  - ocmagent.managed.openshift.io.managed.openshift.io
+  resources:
+  - ocmagents
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ocmagent.managed.openshift.io.managed.openshift.io
+  resources:
+  - ocmagents/status
+  verbs:
+  - get

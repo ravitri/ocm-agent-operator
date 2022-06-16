@@ -1,0 +1,6 @@
+apiVersion: ocmagent.managed.openshift.io.managed.openshift.io/v1alpha1
+kind: OcmAgent
+metadata:
+  name: ocmagent-sample
+spec:
+  # TODO(user): Add fields here
