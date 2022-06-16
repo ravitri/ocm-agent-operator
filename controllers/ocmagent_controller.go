@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	ocmagentv1alpha1 "github.com/openshift/ocm-agent-operator/pkg/apis/ocmagent/v1alpha1"
+	ocmagentv1alpha1 "github.com/openshift/ocm-agent-operator/api/v1alpha1"
 	ctrlconst "github.com/openshift/ocm-agent-operator/pkg/consts/controller"
 	oahconst "github.com/openshift/ocm-agent-operator/pkg/consts/ocmagenthandler"
 	"github.com/openshift/ocm-agent-operator/pkg/localmetrics"

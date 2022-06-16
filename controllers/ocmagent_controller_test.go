@@ -13,10 +13,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	ocmagentv1alpha1 "github.com/openshift/ocm-agent-operator/pkg/apis/ocmagent/v1alpha1"
+	ocmagentv1alpha1 "github.com/openshift/ocm-agent-operator/api/v1alpha1"
 	ctrlconst "github.com/openshift/ocm-agent-operator/pkg/consts/controller"
 	testconst "github.com/openshift/ocm-agent-operator/pkg/consts/test/init"
-	"github.com/openshift/ocm-agent-operator/pkg/controller/ocmagent"
+	"github.com/openshift/ocm-agent-operator/controllers"
 	clientmocks "github.com/openshift/ocm-agent-operator/pkg/util/test/generated/mocks/client"
 	"github.com/openshift/ocm-agent-operator/pkg/util/test/generated/mocks/ocmagenthandler"
 )
@@ -84,10 +84,10 @@ var _ = Describe("OCMAgent Controller", func() {
 					mockClient.EXPECT().Get(gomock.Any(), testconst.OCMAgentNamespacedName, gomock.Any()).Times(1).SetArg(2, *testOcmAgent),
 					mockOcmAgentHandler.EXPECT().EnsureOCMAgentResourcesAbsent(gomock.Any()).Times(1),
 					mockClient.EXPECT().Update(gomock.Any(), gomock.Any()).Times(1).DoAndReturn(
-					func(ctx context.Context, o *ocmagentv1alpha1.OcmAgent, opts ...client.UpdateOptions) error {
-						Expect(o.Finalizers).NotTo(ContainElement(ctrlconst.ReconcileOCMAgentFinalizer))
-						return nil
-					}),
+						func(ctx context.Context, o *ocmagentv1alpha1.OcmAgent, opts ...client.UpdateOptions) error {
+							Expect(o.Finalizers).NotTo(ContainElement(ctrlconst.ReconcileOCMAgentFinalizer))
+							return nil
+						}),
 				)
 				_, err := ocmAgentReconciler.Reconcile(testconst.Context, reconcile.Request{NamespacedName: testconst.OCMAgentNamespacedName})
 				Expect(err).To(BeNil())

@@ -1,4 +1,0 @@
-## Append samples you want in your CSV to this file as resources ##
-resources:
-- ocmagent.managed.openshift.io_v1alpha1_ocmagent.yaml
-#+kubebuilder:scaffold:manifestskustomizesamples
