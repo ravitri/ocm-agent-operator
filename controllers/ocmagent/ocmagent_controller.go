@@ -2,6 +2,7 @@ package ocmagent
 
 import (
 	"context"
+
 	"github.com/go-logr/logr"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -197,4 +198,11 @@ func (r *ReconcileOCMAgent) Reconcile(ctx context.Context, request reconcile.Req
 func handleOCMAgentResources(meta metav1.Object) bool {
 	agentNamespacedName := oahconst.BuildNamespacedName(oahconst.OCMAgentName)
 	return meta.GetNamespace() == agentNamespacedName.Namespace
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *ReconcileOCMAgent) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&ocmagentv1alpha1.OcmAgent{}).
+		Complete(r)
 }

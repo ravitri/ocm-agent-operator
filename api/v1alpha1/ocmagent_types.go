@@ -46,7 +46,7 @@ type OcmAgentStatus struct {
 	AvailableReplicas int32 `json:"availableReplicas"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
 
 // OcmAgent is the Schema for the ocmagents API
 // +kubebuilder:subresource:status
@@ -59,7 +59,7 @@ type OcmAgent struct {
 	Status OcmAgentStatus `json:"status,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
 
 // OcmAgentList contains a list of OcmAgent
 type OcmAgentList struct {

@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	ocmagentmanagedopenshiftiov1alpha1 "github.com/openshift/ocm-agent-operator/api/v1alpha1"
-	"github.com/openshift/ocm-agent-operator/controllers"
+	"github.com/openshift/ocm-agent-operator/controllers/ocmagent"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -78,7 +78,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.OcmAgentReconciler{
+	if err = (&ocmagent.ReconcileOCMAgent{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {

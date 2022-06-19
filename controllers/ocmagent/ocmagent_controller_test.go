@@ -14,9 +14,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	ocmagentv1alpha1 "github.com/openshift/ocm-agent-operator/api/v1alpha1"
+	"github.com/openshift/ocm-agent-operator/controllers/ocmagent"
 	ctrlconst "github.com/openshift/ocm-agent-operator/pkg/consts/controller"
 	testconst "github.com/openshift/ocm-agent-operator/pkg/consts/test/init"
-	"github.com/openshift/ocm-agent-operator/controllers"
 	clientmocks "github.com/openshift/ocm-agent-operator/pkg/util/test/generated/mocks/client"
 	"github.com/openshift/ocm-agent-operator/pkg/util/test/generated/mocks/ocmagenthandler"
 )

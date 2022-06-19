@@ -2,6 +2,7 @@ package init
 
 import (
 	"context"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -16,7 +17,7 @@ import (
 
 var (
 	Context                = context.TODO()
-	Logger                 = logr.DiscardLogger{}
+	Logger                 = logr.Discard()
 	Scheme                 = setScheme(runtime.NewScheme())
 	OCMAgentNamespacedName = types.NamespacedName{
 		Name:      "ocm-agent",
@@ -28,8 +29,8 @@ var (
 		},
 		Spec: ocmagentv1alpha1.OcmAgentSpec{
 			AgentConfig: ocmagentv1alpha1.AgentConfig{
-				OcmBaseUrl:     "http://api.example.com",
-				Services:       []string{},
+				OcmBaseUrl: "http://api.example.com",
+				Services:   []string{},
 			},
 			OcmAgentImage:  "quay.io/ocm-agent:example",
 			TokenSecret:    "example-secret",
