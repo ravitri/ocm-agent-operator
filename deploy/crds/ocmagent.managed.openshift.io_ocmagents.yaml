@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: ocmagents.ocmagent.managed.openshift.io.managed.openshift.io
+  name: ocmagents.ocmagent.managed.openshift.io
 spec:
-  group: ocmagent.managed.openshift.io.managed.openshift.io
+  group: ocmagent.managed.openshift.io
   names:
     kind: OcmAgent
     listKind: OcmAgentList
