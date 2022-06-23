@@ -78,6 +78,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := ocmagentmanagedopenshiftiov1alpha1.AddToScheme(mgr.GetScheme()); err != nil {
+		setupLog.Error(err, "")
+		os.Exit(1)
+	}
+
 	if err = (&ocmagent.ReconcileOCMAgent{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),

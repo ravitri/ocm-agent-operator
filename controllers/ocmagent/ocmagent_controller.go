@@ -11,24 +11,15 @@ import (
 	netv1 "k8s.io/api/networking/v1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	controllerruntime "sigs.k8s.io/controller-runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	ocmagentv1alpha1 "github.com/openshift/ocm-agent-operator/api/v1alpha1"
 	ctrlconst "github.com/openshift/ocm-agent-operator/pkg/consts/controller"
-	oahconst "github.com/openshift/ocm-agent-operator/pkg/consts/ocmagenthandler"
 	"github.com/openshift/ocm-agent-operator/pkg/localmetrics"
 	"github.com/openshift/ocm-agent-operator/pkg/ocmagenthandler"
 )
@@ -44,85 +35,6 @@ type ReconcileOCMAgent struct {
 }
 
 var log = logf.Log.WithName("controller_ocmagent")
-
-// Add creates a new OCMAgent Controller and adds it to the Manager. The Manager will set fields on the Controller
-// and Start it when the Manager is Started.
-func Add(mgr manager.Manager) error {
-	reconciler, err := newReconciler(mgr)
-	if err != nil {
-		return err
-	}
-	return add(mgr, reconciler)
-}
-
-// newReconciler returns a new ReconcileOCMAgent
-func newReconciler(mgr manager.Manager) (*ReconcileOCMAgent, error) {
-	mgrClient := mgr.GetClient()
-	kubeConfig := controllerruntime.GetConfigOrDie()
-	handlerClient, err := client.New(kubeConfig, client.Options{})
-	if err != nil {
-		return nil, err
-	}
-
-	log := ctrl.Log.WithName("controllers").WithName("OCMAgent")
-	ctx := context.Background()
-	scheme := mgr.GetScheme()
-	return &ReconcileOCMAgent{
-		Client:          mgrClient,
-		Scheme:          scheme,
-		Ctx:             ctx,
-		Log:             log,
-		OCMAgentHandler: ocmagenthandler.New(handlerClient, scheme, log, ctx),
-	}, nil
-}
-
-// add adds a new Controller to mgr with r as the reconcile.Reconciler
-func add(mgr manager.Manager, r *ReconcileOCMAgent) error {
-	// Create a new controller
-	c, err := controller.New("ocmagent-controller", mgr, controller.Options{Reconciler: r})
-	if err != nil {
-		return err
-	}
-
-	// Watch for changes to primary resource OCMAgent
-	err = c.Watch(&source.Kind{Type: &ocmagentv1alpha1.OcmAgent{}}, &handler.EnqueueRequestForObject{})
-	if err != nil {
-		return err
-	}
-
-	// Define a list of managedResources
-	var managedResources = []source.Source{
-		&source.Kind{Type: &appsv1.Deployment{}},
-		&source.Kind{Type: &corev1.Service{}},
-		&source.Kind{Type: &corev1.ConfigMap{}},
-		&source.Kind{Type: &corev1.Secret{}},
-		&source.Kind{Type: &netv1.NetworkPolicy{}},
-		&source.Kind{Type: &monitoringv1.ServiceMonitor{}},
-	}
-
-	// Watch for the managedResources
-	oaPredicate := generatePredicateFunc(handleOCMAgentResources)
-	for _, r := range managedResources {
-		err = c.Watch(r, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &ocmagentv1alpha1.OcmAgent{},
-		}, oaPredicate)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func generatePredicateFunc(handler func(metav1.Object) bool) predicate.Funcs {
-	return predicate.Funcs{
-		UpdateFunc:  func(e event.UpdateEvent) bool { return handler(e.ObjectNew) },
-		DeleteFunc:  func(e event.DeleteEvent) bool { return handler(e.Object) },
-		CreateFunc:  func(e event.CreateEvent) bool { return handler(e.Object) },
-		GenericFunc: func(e event.GenericEvent) bool { return false },
-	}
-}
 
 // blank assignment to verify that ReconcileOCMAgent implements reconcile.Reconciler
 var _ reconcile.Reconciler = &ReconcileOCMAgent{}
@@ -194,15 +106,15 @@ func (r *ReconcileOCMAgent) Reconcile(ctx context.Context, request reconcile.Req
 	return reconcile.Result{}, nil
 }
 
-// handleOCMAgentResources returns true if meta indicates it is an OCM Agent-related resource
-func handleOCMAgentResources(meta metav1.Object) bool {
-	agentNamespacedName := oahconst.BuildNamespacedName(oahconst.OCMAgentName)
-	return meta.GetNamespace() == agentNamespacedName.Namespace
-}
-
 // SetupWithManager sets up the controller with the Manager.
 func (r *ReconcileOCMAgent) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&ocmagentv1alpha1.OcmAgent{}).
+		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Service{}).
+		Owns(&corev1.ConfigMap{}).
+		Owns(&corev1.Secret{}).
+		Owns(&netv1.NetworkPolicy{}).
+		Owns(&monitoringv1.ServiceMonitor{}).
 		Complete(r)
 }
