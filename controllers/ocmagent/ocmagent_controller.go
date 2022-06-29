@@ -1,0 +1,228 @@
+/*
+Copyright 2022.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package ocmagent
+
+import (
+	"context"
+
+	"github.com/go-logr/logr"
+
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	netv1 "k8s.io/api/networking/v1"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	ocmagentv1alpha1 "github.com/openshift/ocm-agent-operator/api/v1alpha1"
+	ctrlconst "github.com/openshift/ocm-agent-operator/pkg/consts/controller"
+	"github.com/openshift/ocm-agent-operator/pkg/localmetrics"
+	"github.com/openshift/ocm-agent-operator/pkg/ocmagenthandler"
+)
+
+// OcmAgentReconciler reconciles a OcmAgent object
+type OcmAgentReconciler struct {
+	Client client.Client
+	Scheme *runtime.Scheme
+	Ctx    context.Context
+	Log    logr.Logger
+
+	OCMAgentHandler ocmagenthandler.OCMAgentHandler
+}
+
+var log = logf.Log.WithName("controller_ocmagent")
+
+var _ reconcile.Reconciler = &OcmAgentReconciler{}
+
+//+kubebuilder:rbac:groups=ocmagent.managed.openshift.io,resources=ocmagents,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=ocmagent.managed.openshift.io,resources=ocmagents/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=ocmagent.managed.openshift.io,resources=ocmagents/finalizers,verbs=update
+
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+// TODO(user): Modify the Reconcile function to compare the state specified by
+// the OcmAgent object against the actual cluster state, and then
+// perform operations to make the cluster state reflect the state specified by
+// the user.
+//
+// For more details, check Reconcile and its Result here:
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.2/pkg/reconcile
+func (r *OcmAgentReconciler) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
+	r.Ctx = ctx
+	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
+	reqLogger.Info("Reconciling OCMAgent")
+
+	// Fetch the OCMAgent instance
+	instance := ocmagentv1alpha1.OcmAgent{}
+	err := r.Client.Get(ctx, request.NamespacedName, &instance)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			// Return and don't requeue
+			localmetrics.UpdateMetricOcmAgentResourceAbsent()
+			return reconcile.Result{}, nil
+		}
+		// Error reading the object - requeue the request.
+		log.Error(err, "Failed to retrieve OCMAgent. Will retry on next reconcile.")
+		return reconcile.Result{}, err
+	}
+	localmetrics.ResetMetricOcmAgentResourceAbsent()
+
+	// Is the OCMAgent being deleted?
+	if !instance.DeletionTimestamp.IsZero() {
+		log.V(2).Info("Entering EnsureOCMAgentResourcesAbsent")
+		err := r.OCMAgentHandler.EnsureOCMAgentResourcesAbsent(instance)
+		if err != nil {
+			log.Error(err, "Failed to remove OCMAgent. Will retry on next reconcile.")
+			return reconcile.Result{}, err
+		}
+		// The finalizer can now be removed
+		if controllerutil.ContainsFinalizer(&instance, ctrlconst.ReconcileOCMAgentFinalizer) {
+			controllerutil.RemoveFinalizer(&instance, ctrlconst.ReconcileOCMAgentFinalizer)
+			if err := r.Client.Update(ctx, &instance); err != nil {
+				log.Error(err, "Failed to remove finalizer from OCMAgent resource. Will retry on next reconcile.")
+				return reconcile.Result{}, err
+			}
+		}
+		log.Info("Successfully removed OCMAgent resources.")
+	} else {
+		// There needs to be an OCM Agent
+		log.V(2).Info("Entering EnsureOCMAgentResourcesExist")
+		err := r.OCMAgentHandler.EnsureOCMAgentResourcesExist(instance)
+		if err != nil {
+			log.Error(err, "Failed to create OCMAgent. Will retry on next reconcile.")
+			return reconcile.Result{}, err
+		}
+
+		// The OCM Agent is deployed, so set a finalizer on the resource
+		if !controllerutil.ContainsFinalizer(&instance, ctrlconst.ReconcileOCMAgentFinalizer) {
+			controllerutil.AddFinalizer(&instance, ctrlconst.ReconcileOCMAgentFinalizer)
+			if err := r.Client.Update(ctx, &instance); err != nil {
+				log.Error(err, "Failed to apply finalizer to OCMAgent resource. Will retry on next reconcile.")
+				return reconcile.Result{}, err
+			}
+		}
+		log.Info("Successfully setup OCMAgent resources.")
+	}
+
+	return reconcile.Result{}, nil
+}
+
+/*
+func IsOcmAgentRelatedObj(obj client.Object) (bool, ctrl.Request) {
+	if obj.GetNamespace() == "" {
+		// ignore cluster scope objects
+		return false, ctrl.Request{}
+	}
+
+	if oahconst.OCMAgentNamespace != obj.GetNamespace() {
+		// ignore object in another namespace
+		return false, ctrl.Request{}
+	}
+
+	if value := obj.GetName(); value != oahconst.OCMAgentName {
+		return false, ctrl.Request{}
+	}
+
+	return true, ctrl.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      oahconst.OCMAgentName,
+			Namespace: oahconst.OCMAgentNamespace,
+		},
+	}
+}
+*/
+
+/*
+func generatePredicateFunc(handler func(metav1.Object) bool) predicate.Funcs {
+	return predicate.Funcs{
+		UpdateFunc:  func(e event.UpdateEvent) bool { return handler(e.ObjectNew) },
+		DeleteFunc:  func(e event.DeleteEvent) bool { return handler(e.Object) },
+		CreateFunc:  func(e event.CreateEvent) bool { return handler(e.Object) },
+		GenericFunc: func(e event.GenericEvent) bool { return false },
+	}
+}
+*/
+
+/*
+// handleOCMAgentResources returns true if meta indicates it is an OCM Agent-related resource
+func handleOCMAgentResources(meta metav1.Object) bool {
+	agentNamespacedName := oahconst.BuildNamespacedName(oahconst.OCMAgentName)
+	return meta.GetNamespace() == agentNamespacedName.Namespace
+}
+*/
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *OcmAgentReconciler) SetupWithManager(mgr ctrl.Manager) error {
+
+	/*
+		var toOcmAgentRelatedObjRequestMapper handler.MapFunc = func(obj client.Object) []ctrl.Request {
+			isOcmAgentRelatedObj, reconcileRequest := IsOcmAgentRelatedObj(obj)
+			if isOcmAgentRelatedObj {
+				return []ctrl.Request{reconcileRequest}
+			}
+			return []ctrl.Request{}
+		}
+	*/
+	//	oaPredicate := generatePredicateFunc(handleOCMAgentResources)
+
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
+		//  Watch for the managedResources
+		Watches(&source.Kind{Type: &ocmagentv1alpha1.OcmAgent{}}, &handler.EnqueueRequestForObject{}).
+		Watches(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &ocmagentv1alpha1.OcmAgent{},
+		}).
+		Watches(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &ocmagentv1alpha1.OcmAgent{},
+		}).
+		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &ocmagentv1alpha1.OcmAgent{},
+		}).
+		Watches(&source.Kind{Type: &corev1.ServiceAccount{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &ocmagentv1alpha1.OcmAgent{},
+		}).
+		Watches(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &ocmagentv1alpha1.OcmAgent{},
+		}).
+		Watches(&source.Kind{Type: &netv1.NetworkPolicy{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &ocmagentv1alpha1.OcmAgent{},
+		})
+		/*
+			Watches(&source.Kind{Type: &corev1.Secret{}},
+				handler.EnqueueRequestsFromMapFunc(toOcmAgentRelatedObjRequestMapper),
+				builder.WithPredicates(oaPredicate),
+			)
+		*/
+	// Create a new controller
+	return controllerBuilder.
+		For(&ocmagentv1alpha1.OcmAgent{}).
+		Complete(r)
+}

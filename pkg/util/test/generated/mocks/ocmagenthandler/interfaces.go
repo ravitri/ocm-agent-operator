@@ -6,7 +6,7 @@ package ocmagenthandler
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	v1alpha1 "github.com/openshift/ocm-agent-operator/pkg/apis/ocmagent/v1alpha1"
+	v1alpha1 "github.com/openshift/ocm-agent-operator/api/v1alpha1"
 	reflect "reflect"
 )
 

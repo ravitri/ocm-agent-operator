@@ -15,7 +15,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	ocmagentv1alpha1 "github.com/openshift/ocm-agent-operator/pkg/apis/ocmagent/v1alpha1"
+	ocmagentv1alpha1 "github.com/openshift/ocm-agent-operator/api/v1alpha1"
 	"github.com/openshift/ocm-agent-operator/pkg/consts/ocmagenthandler"
 
 	. "github.com/onsi/ginkgo"
