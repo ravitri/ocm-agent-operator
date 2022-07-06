@@ -18,6 +18,7 @@ package ocmagent
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 
@@ -28,10 +29,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -54,6 +58,30 @@ type OcmAgentReconciler struct {
 var log = logf.Log.WithName("controller_ocmagent")
 
 var _ reconcile.Reconciler = &OcmAgentReconciler{}
+
+/*
+// newReconciler returns a new OcmAgentReconciler
+func newReconciler(mgr manager.Manager) (*OcmAgentReconciler, error) {
+	mgrClient := mgr.GetClient()
+	kubeConfig := controllerruntime.GetConfigOrDie()
+	handlerClient, err := client.New(kubeConfig, client.Options{})
+	if err != nil {
+		return nil, err
+	}
+
+	log := ctrl.Log.WithName("controllers").WithName("OCMAgent")
+	ctx := context.Background()
+	scheme := mgr.GetScheme()
+	return &OcmAgentReconciler{
+		Client:          mgrClient,
+		Scheme:          scheme,
+		Ctx:             ctx,
+		Log:             log,
+		OCMAgentHandler: ocmagenthandler.New(handlerClient, scheme, log, ctx),
+	}, nil
+}
+
+*/
 
 //+kubebuilder:rbac:groups=ocmagent.managed.openshift.io,resources=ocmagents,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=ocmagent.managed.openshift.io,resources=ocmagents/status,verbs=get;update;patch
@@ -109,6 +137,9 @@ func (r *OcmAgentReconciler) Reconcile(ctx context.Context, request reconcile.Re
 		log.Info("Successfully removed OCMAgent resources.")
 	} else {
 		// There needs to be an OCM Agent
+
+		fmt.Printf("%s and %t", r.OCMAgentHandler, r.OCMAgentHandler)
+
 		log.V(2).Info("Entering EnsureOCMAgentResourcesExist")
 		err := r.OCMAgentHandler.EnsureOCMAgentResourcesExist(instance)
 		if err != nil {
@@ -129,31 +160,6 @@ func (r *OcmAgentReconciler) Reconcile(ctx context.Context, request reconcile.Re
 
 	return reconcile.Result{}, nil
 }
-
-/*
-func IsOcmAgentRelatedObj(obj client.Object) (bool, ctrl.Request) {
-	if obj.GetNamespace() == "" {
-		// ignore cluster scope objects
-		return false, ctrl.Request{}
-	}
-
-	if oahconst.OCMAgentNamespace != obj.GetNamespace() {
-		// ignore object in another namespace
-		return false, ctrl.Request{}
-	}
-
-	if value := obj.GetName(); value != oahconst.OCMAgentName {
-		return false, ctrl.Request{}
-	}
-
-	return true, ctrl.Request{
-		NamespacedName: types.NamespacedName{
-			Name:      oahconst.OCMAgentName,
-			Namespace: oahconst.OCMAgentNamespace,
-		},
-	}
-}
-*/
 
 /*
 func generatePredicateFunc(handler func(metav1.Object) bool) predicate.Funcs {
@@ -177,50 +183,63 @@ func handleOCMAgentResources(meta metav1.Object) bool {
 // SetupWithManager sets up the controller with the Manager.
 func (r *OcmAgentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
-	/*
-		var toOcmAgentRelatedObjRequestMapper handler.MapFunc = func(obj client.Object) []ctrl.Request {
-			isOcmAgentRelatedObj, reconcileRequest := IsOcmAgentRelatedObj(obj)
-			if isOcmAgentRelatedObj {
-				return []ctrl.Request{reconcileRequest}
-			}
-			return []ctrl.Request{}
-		}
-	*/
-	//	oaPredicate := generatePredicateFunc(handleOCMAgentResources)
+	onAllExceptGenericEventsPredicate := predicate.Funcs{
+		UpdateFunc: func(evt event.UpdateEvent) bool {
+			return true
+		},
+		CreateFunc: func(evt event.CreateEvent) bool {
+			return true
+		},
+		DeleteFunc: func(evt event.DeleteEvent) bool {
+			return true
+		},
+		GenericFunc: func(evt event.GenericEvent) bool {
+			return false
+		},
+	}
 
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		//  Watch for the managedResources
-		Watches(&source.Kind{Type: &ocmagentv1alpha1.OcmAgent{}}, &handler.EnqueueRequestForObject{}).
-		Watches(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &ocmagentv1alpha1.OcmAgent{},
-		}).
-		Watches(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &ocmagentv1alpha1.OcmAgent{},
-		}).
-		Watches(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &ocmagentv1alpha1.OcmAgent{},
-		}).
-		Watches(&source.Kind{Type: &corev1.ServiceAccount{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &ocmagentv1alpha1.OcmAgent{},
-		}).
-		Watches(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &ocmagentv1alpha1.OcmAgent{},
-		}).
-		Watches(&source.Kind{Type: &netv1.NetworkPolicy{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &ocmagentv1alpha1.OcmAgent{},
-		})
-		/*
-			Watches(&source.Kind{Type: &corev1.Secret{}},
-				handler.EnqueueRequestsFromMapFunc(toOcmAgentRelatedObjRequestMapper),
-				builder.WithPredicates(oaPredicate),
-			)
-		*/
+		Watches(&source.Kind{Type: &ocmagentv1alpha1.OcmAgent{}},
+			&handler.EnqueueRequestForObject{},
+			builder.WithPredicates(onAllExceptGenericEventsPredicate),
+		).
+		Watches(&source.Kind{Type: &corev1.Service{}},
+			&handler.EnqueueRequestForOwner{
+				IsController: true,
+				OwnerType:    &ocmagentv1alpha1.OcmAgent{},
+			},
+			builder.WithPredicates(onAllExceptGenericEventsPredicate),
+		).
+		Watches(&source.Kind{Type: &corev1.Secret{}},
+			&handler.EnqueueRequestForOwner{
+				IsController: true,
+				OwnerType:    &ocmagentv1alpha1.OcmAgent{},
+			},
+			builder.WithPredicates(onAllExceptGenericEventsPredicate),
+		).
+		Watches(&source.Kind{Type: &corev1.ConfigMap{}},
+			&handler.EnqueueRequestForOwner{
+				IsController: true,
+				OwnerType:    &ocmagentv1alpha1.OcmAgent{},
+			},
+			builder.WithPredicates(onAllExceptGenericEventsPredicate),
+		).
+		Watches(&source.Kind{Type: &appsv1.Deployment{}},
+			&handler.EnqueueRequestForOwner{
+				IsController: true,
+				OwnerType:    &ocmagentv1alpha1.OcmAgent{},
+			},
+			builder.WithPredicates(onAllExceptGenericEventsPredicate),
+		).
+		Watches(&source.Kind{Type: &netv1.NetworkPolicy{}},
+			&handler.EnqueueRequestForOwner{
+				IsController: true,
+				OwnerType:    &ocmagentv1alpha1.OcmAgent{},
+			},
+			builder.WithPredicates(onAllExceptGenericEventsPredicate),
+		)
+
 	// Create a new controller
 	return controllerBuilder.
 		For(&ocmagentv1alpha1.OcmAgent{}).
