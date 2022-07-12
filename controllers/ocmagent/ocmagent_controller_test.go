@@ -35,11 +35,9 @@ var _ = Describe("OCMAgent Controller", func() {
 		mockClient = clientmocks.NewMockClient(mockCtrl)
 		mockOcmAgentHandler = ocmagenthandler.NewMockOCMAgentHandler(mockCtrl)
 		ocmAgentReconciler = ocmagent.OcmAgentReconciler{
-			Client:          mockClient,
-			Ctx:             testconst.Context,
-			Log:             testconst.Logger,
-			Scheme:          testconst.Scheme,
-			OCMAgentHandler: mockOcmAgentHandler,
+			Client:                 mockClient,
+			Scheme:                 testconst.Scheme,
+			OCMAgentHandlerBuilder: ocmAgentReconciler.OCMAgentHandlerBuilder,
 		}
 	})
 
@@ -68,7 +66,7 @@ var _ = Describe("OCMAgent Controller", func() {
 				)
 				_, err := ocmAgentReconciler.Reconcile(testconst.Context, reconcile.Request{NamespacedName: testconst.OCMAgentNamespacedName})
 				Expect(err).To(BeNil())
-				Expect(ocmAgentReconciler.Log.Enabled()).To(BeFalse())
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 
@@ -91,7 +89,7 @@ var _ = Describe("OCMAgent Controller", func() {
 				)
 				_, err := ocmAgentReconciler.Reconcile(testconst.Context, reconcile.Request{NamespacedName: testconst.OCMAgentNamespacedName})
 				Expect(err).To(BeNil())
-				Expect(ocmAgentReconciler.Log.Enabled()).To(BeFalse())
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 	})

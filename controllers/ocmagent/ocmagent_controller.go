@@ -18,9 +18,6 @@ package ocmagent
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/go-logr/logr"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -45,43 +42,30 @@ import (
 	"github.com/openshift/ocm-agent-operator/pkg/ocmagenthandler"
 )
 
+type ocmAgentHandler func(scheme *runtime.Scheme) (ocmagenthandler.OCMAgentHandler, error)
+
 // OcmAgentReconciler reconciles a OcmAgent object
 type OcmAgentReconciler struct {
-	Client client.Client
-	Scheme *runtime.Scheme
-	Ctx    context.Context
-	Log    logr.Logger
-
-	OCMAgentHandler ocmagenthandler.OCMAgentHandler
+	Client                 client.Client
+	Scheme                 *runtime.Scheme
+	OCMAgentHandlerBuilder ocmAgentHandler
 }
 
 var log = logf.Log.WithName("controller_ocmagent")
 
 var _ reconcile.Reconciler = &OcmAgentReconciler{}
 
-/*
-// newReconciler returns a new OcmAgentReconciler
-func newReconciler(mgr manager.Manager) (*OcmAgentReconciler, error) {
-	mgrClient := mgr.GetClient()
-	kubeConfig := controllerruntime.GetConfigOrDie()
-	handlerClient, err := client.New(kubeConfig, client.Options{})
+func (r *OcmAgentReconciler) getOCMAgentHandler() (ocmagenthandler.OCMAgentHandler, error) {
+	kubeConfig := ctrl.GetConfigOrDie()
+	handlerClient, err := client.New(kubeConfig, client.Options{Scheme: r.Scheme})
 	if err != nil {
 		return nil, err
 	}
-
 	log := ctrl.Log.WithName("controllers").WithName("OCMAgent")
 	ctx := context.Background()
-	scheme := mgr.GetScheme()
-	return &OcmAgentReconciler{
-		Client:          mgrClient,
-		Scheme:          scheme,
-		Ctx:             ctx,
-		Log:             log,
-		OCMAgentHandler: ocmagenthandler.New(handlerClient, scheme, log, ctx),
-	}, nil
+	oaohandler := ocmagenthandler.New(handlerClient, r.Scheme, log, ctx)
+	return oaohandler, nil
 }
-
-*/
 
 //+kubebuilder:rbac:groups=ocmagent.managed.openshift.io,resources=ocmagents,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=ocmagent.managed.openshift.io,resources=ocmagents/status,verbs=get;update;patch
@@ -97,7 +81,7 @@ func newReconciler(mgr manager.Manager) (*OcmAgentReconciler, error) {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.2/pkg/reconcile
 func (r *OcmAgentReconciler) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
-	r.Ctx = ctx
+
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling OCMAgent")
 
@@ -117,11 +101,15 @@ func (r *OcmAgentReconciler) Reconcile(ctx context.Context, request reconcile.Re
 		return reconcile.Result{}, err
 	}
 	localmetrics.ResetMetricOcmAgentResourceAbsent()
+	oaohandler, err := r.getOCMAgentHandler()
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 
 	// Is the OCMAgent being deleted?
 	if !instance.DeletionTimestamp.IsZero() {
 		log.V(2).Info("Entering EnsureOCMAgentResourcesAbsent")
-		err := r.OCMAgentHandler.EnsureOCMAgentResourcesAbsent(instance)
+		err := oaohandler.EnsureOCMAgentResourcesAbsent(instance)
 		if err != nil {
 			log.Error(err, "Failed to remove OCMAgent. Will retry on next reconcile.")
 			return reconcile.Result{}, err
@@ -137,11 +125,8 @@ func (r *OcmAgentReconciler) Reconcile(ctx context.Context, request reconcile.Re
 		log.Info("Successfully removed OCMAgent resources.")
 	} else {
 		// There needs to be an OCM Agent
-
-		fmt.Printf("%s and %t", r.OCMAgentHandler, r.OCMAgentHandler)
-
 		log.V(2).Info("Entering EnsureOCMAgentResourcesExist")
-		err := r.OCMAgentHandler.EnsureOCMAgentResourcesExist(instance)
+		err := oaohandler.EnsureOCMAgentResourcesExist(instance)
 		if err != nil {
 			log.Error(err, "Failed to create OCMAgent. Will retry on next reconcile.")
 			return reconcile.Result{}, err
@@ -160,25 +145,6 @@ func (r *OcmAgentReconciler) Reconcile(ctx context.Context, request reconcile.Re
 
 	return reconcile.Result{}, nil
 }
-
-/*
-func generatePredicateFunc(handler func(metav1.Object) bool) predicate.Funcs {
-	return predicate.Funcs{
-		UpdateFunc:  func(e event.UpdateEvent) bool { return handler(e.ObjectNew) },
-		DeleteFunc:  func(e event.DeleteEvent) bool { return handler(e.Object) },
-		CreateFunc:  func(e event.CreateEvent) bool { return handler(e.Object) },
-		GenericFunc: func(e event.GenericEvent) bool { return false },
-	}
-}
-*/
-
-/*
-// handleOCMAgentResources returns true if meta indicates it is an OCM Agent-related resource
-func handleOCMAgentResources(meta metav1.Object) bool {
-	agentNamespacedName := oahconst.BuildNamespacedName(oahconst.OCMAgentName)
-	return meta.GetNamespace() == agentNamespacedName.Namespace
-}
-*/
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *OcmAgentReconciler) SetupWithManager(mgr ctrl.Manager) error {

@@ -31,6 +31,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	monitorv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	oconfigv1 "github.com/openshift/api/config/v1"
+
 	ocmagentmanagedopenshiftiov1alpha1 "github.com/openshift/ocm-agent-operator/api/v1alpha1"
 	"github.com/openshift/ocm-agent-operator/controllers/ocmagent"
 	//+kubebuilder:scaffold:imports
@@ -45,6 +48,8 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(ocmagentmanagedopenshiftiov1alpha1.AddToScheme(scheme))
+	utilruntime.Must(oconfigv1.Install(scheme))
+	utilruntime.Must(monitorv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
