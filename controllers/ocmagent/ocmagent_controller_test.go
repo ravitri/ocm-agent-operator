@@ -37,8 +37,6 @@ var _ = Describe("OCMAgent Controller", func() {
 		ocmAgentReconciler = ocmagent.OcmAgentReconciler{
 			Client:                 mockClient,
 			Scheme:                 testconst.Scheme,
-			Ctx:                    testconst.Context,
-			Log:                    testconst.Logger,
 			OCMAgentHandlerBuilder: ocmAgentReconciler.OCMAgentHandlerBuilder,
 		}
 	})

@@ -36,7 +36,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/go-logr/logr"
 	ocmagentv1alpha1 "github.com/openshift/ocm-agent-operator/api/v1alpha1"
 	ctrlconst "github.com/openshift/ocm-agent-operator/pkg/consts/controller"
 	"github.com/openshift/ocm-agent-operator/pkg/localmetrics"
@@ -49,8 +48,6 @@ type ocmAgentHandler func(scheme *runtime.Scheme) (ocmagenthandler.OCMAgentHandl
 type OcmAgentReconciler struct {
 	Client                 client.Client
 	Scheme                 *runtime.Scheme
-	Log                    logr.Logger
-	Ctx                    context.Context
 	OCMAgentHandlerBuilder ocmAgentHandler
 }
 
