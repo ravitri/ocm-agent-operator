@@ -6,18 +6,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/go-logr/logr"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 
 	ocmagentv1alpha1 "github.com/openshift/ocm-agent-operator/api/v1alpha1"
+	"github.com/openshift/ocm-agent-operator/pkg/test"
 )
 
 var (
 	Context                = context.TODO()
-	Logger                 = logr.Logger{}
+	Logger                 = test.NewTestLogger().Logger()
 	Scheme                 = setScheme(runtime.NewScheme())
 	OCMAgentNamespacedName = types.NamespacedName{
 		Name:      "ocm-agent",
