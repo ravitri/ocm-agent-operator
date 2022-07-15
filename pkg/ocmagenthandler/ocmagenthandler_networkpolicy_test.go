@@ -2,9 +2,10 @@ package ocmagenthandler
 
 import (
 	"context"
+	"reflect"
+
 	k8serrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"reflect"
 
 	"github.com/golang/mock/gomock"
 
@@ -36,9 +37,9 @@ var _ = Describe("OCM Agent NetworkPolicy Handler", func() {
 		testOcmAgent = testconst.TestOCMAgent
 		testOcmAgentHandler = ocmAgentHandler{
 			Client: mockClient,
-			Scheme: testconst.Scheme,
 			Log:    testconst.Logger,
 			Ctx:    testconst.Context,
+			Scheme: testconst.Scheme,
 		}
 	})
 

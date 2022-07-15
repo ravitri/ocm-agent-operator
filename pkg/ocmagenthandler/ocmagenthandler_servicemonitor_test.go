@@ -43,9 +43,9 @@ var _ = Describe("OCM Agent ServiceMonitor Handler", func() {
 		}
 		testOcmAgentHandler = ocmAgentHandler{
 			Client: mockClient,
-			Scheme: testconst.Scheme,
 			Log:    testconst.Logger,
 			Ctx:    testconst.Context,
+			Scheme: testconst.Scheme,
 		}
 	})
 

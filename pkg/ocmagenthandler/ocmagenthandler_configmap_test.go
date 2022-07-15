@@ -37,9 +37,9 @@ var _ = Describe("OCM Agent ConfigMap Handler", func() {
 		testOcmAgent = testconst.TestOCMAgent
 		testOcmAgentHandler = ocmAgentHandler{
 			Client: mockClient,
-			Scheme: testconst.Scheme,
 			Log:    testconst.Logger,
 			Ctx:    testconst.Context,
+			Scheme: testconst.Scheme,
 		}
 		testClusterId = "9345c78b-b6b6-4f42-b242-79bfcc403b0a"
 	})

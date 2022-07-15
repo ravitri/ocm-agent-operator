@@ -26,18 +26,20 @@ var _ = Describe("OCMAgent Controller", func() {
 		mockClient          *clientmocks.MockClient
 		mockCtrl            *gomock.Controller
 		mockOcmAgentHandler *ocmagenthandler.MockOCMAgentHandler
-		ocmAgentReconciler  ocmagent.OcmAgentReconciler
+		ocmAgentReconciler  *ocmagent.OcmAgentReconciler
 		testOcmAgent        *ocmagentv1alpha1.OcmAgent
+		mockOcmAgentHandlerBuilder *ocmagenthandler.MockOcmAgentHandlerBuilder
 	)
 
 	BeforeEach(func() {
 		mockCtrl = gomock.NewController(GinkgoT())
 		mockClient = clientmocks.NewMockClient(mockCtrl)
 		mockOcmAgentHandler = ocmagenthandler.NewMockOCMAgentHandler(mockCtrl)
+		mockOcmAgentHandlerBuilder = ocmagenthandler.NewMockOcmAgentHandlerBuilder(mockCtrl)
 		ocmAgentReconciler = ocmagent.OcmAgentReconciler{
-			Client:                 mockClient,
-			Scheme:                 testconst.Scheme,
-			OCMAgentHandlerBuilder: ocmAgentReconciler.OCMAgentHandlerBuilder,
+			Client: mockClient,
+			Scheme: testconst.Scheme,
+			OCMAgentHandlerBuilder: ,
 		}
 	})
 

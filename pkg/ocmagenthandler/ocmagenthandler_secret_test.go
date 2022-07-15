@@ -51,9 +51,9 @@ var _ = Describe("OCM Agent Access Token Secret Handler", func() {
 		testOcmAgent = testconst.TestOCMAgent
 		testOcmAgentHandler = ocmAgentHandler{
 			Client: mockClient,
-			Scheme: testconst.Scheme,
 			Log:    testconst.Logger,
 			Ctx:    testconst.Context,
+			Scheme: testconst.Scheme,
 		}
 		testClusterPullSecretValue = []byte(fmt.Sprintf(`{
 			"auths": {
