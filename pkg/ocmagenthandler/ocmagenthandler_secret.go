@@ -3,10 +3,11 @@ package ocmagenthandler
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	ocmagentv1alpha1 "github.com/openshift/ocm-agent-operator/api/v1alpha1"
@@ -84,7 +85,7 @@ func (o *ocmAgentHandler) ensureFleetClientSecret(ocmAgent ocmagentv1alpha1.OcmA
 	foundResource := &corev1.Secret{}
 	localmetrics.ResetMetricFleetSecretAbsent(ocmAgent.Name)
 	// Does the resource already exist?
-	o.Log.Info("ensuring ocm agent fleet secret exists", "resource", namespacedName.String())
+	o.Log.Info("ensuring fleetmode secret exists", "resource", namespacedName.String())
 	if err := o.Client.Get(o.Ctx, namespacedName, foundResource); err != nil {
 		if k8serrors.IsNotFound(err) {
 			// It does not exist, so must be created.
