@@ -99,6 +99,8 @@ func buildOCMAgentDeployment(ocmAgent ocmagentv1alpha1.OcmAgent) appsv1.Deployme
 		{Name: "HTTP_PROXY"},
 		{Name: "HTTPS_PROXY"},
 		{Name: "NO_PROXY"},
+		{Name: "OCM_AGENT_SECRET_NAME", Value: ocmAgent.Name},
+		{Name: "OCM_AGENT_CONFIGMAP_NAME", Value: ocmAgent.Name},
 	}
 
 	// Sort volume slices by name to keep the sequence stable.
