@@ -2,6 +2,8 @@ package ocmagenthandler
 
 import (
 	"context"
+	"reflect"
+
 	oconfigv1 "github.com/openshift/api/config/v1"
 	testconst "github.com/openshift/ocm-agent-operator/pkg/consts/test/init"
 	clientmocks "github.com/openshift/ocm-agent-operator/pkg/util/test/generated/mocks/client"
@@ -9,7 +11,6 @@ import (
 	k8serrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/golang/mock/gomock"
@@ -187,7 +188,7 @@ var _ = Describe("OCM Agent Deployment Handler", func() {
 				gomock.InOrder(
 					mockClient.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).SetArg(2, testProxy),
 				)
-				envVars, _ := testOcmAgentHandler.buildEnvVars()
+				envVars, _ := testOcmAgentHandler.buildEnvVars(testOcmAgent)
 				testDeployment.Spec.Template.Spec.Containers[0].Env = envVars
 			})
 			It("creates the deployment", func() {

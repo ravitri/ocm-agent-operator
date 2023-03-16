@@ -99,8 +99,6 @@ func buildOCMAgentDeployment(ocmAgent ocmagentv1alpha1.OcmAgent) appsv1.Deployme
 		{Name: "HTTP_PROXY"},
 		{Name: "HTTPS_PROXY"},
 		{Name: "NO_PROXY"},
-		{Name: "OCM_AGENT_SECRET_NAME", Value: ocmAgent.Name},
-		{Name: "OCM_AGENT_CONFIGMAP_NAME", Value: ocmAgent.Name},
 	}
 
 	// Sort volume slices by name to keep the sequence stable.
@@ -236,7 +234,7 @@ func (o *ocmAgentHandler) ensureDeployment(ocmAgent ocmagentv1alpha1.OcmAgent) e
 		return buildOCMAgentDeployment(ocmAgent)
 	}
 
-	envVars, err := o.buildEnvVars()
+	envVars, err := o.buildEnvVars(ocmAgent)
 	if err != nil {
 		return err
 	}
@@ -396,7 +394,7 @@ func deploymentConfigChanged(current, expected *appsv1.Deployment, ocmAgent ocma
 }
 
 // buildEnvVars build the slice of environments to set to the OCM Agent deployment
-func (o *ocmAgentHandler) buildEnvVars() ([]corev1.EnvVar, error) {
+func (o *ocmAgentHandler) buildEnvVars(ocmAgent ocmagentv1alpha1.OcmAgent) ([]corev1.EnvVar, error) {
 	envVars := []corev1.EnvVar{}
 	proxy := oconfigv1.Proxy{}
 	err := o.Client.Get(o.Ctx, oah.ProxyNamespacedName, &proxy)
@@ -408,6 +406,8 @@ func (o *ocmAgentHandler) buildEnvVars() ([]corev1.EnvVar, error) {
 	envVars = append(envVars, corev1.EnvVar{Name: "HTTP_PROXY", Value: proxyStatus.HTTPProxy})
 	envVars = append(envVars, corev1.EnvVar{Name: "HTTPS_PROXY", Value: proxyStatus.HTTPSProxy})
 	envVars = append(envVars, corev1.EnvVar{Name: "NO_PROXY", Value: proxyStatus.NoProxy})
+	envVars = append(envVars, corev1.EnvVar{Name: "OCM_AGENT_SECRET_NAME", Value: ocmAgent.Name})
+	envVars = append(envVars, corev1.EnvVar{Name: "OCM_AGENT_CONFIGMAP_NAME", Value: ocmAgent.Name})
 
 	return envVars, nil
 }
