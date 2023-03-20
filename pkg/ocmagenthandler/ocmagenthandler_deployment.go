@@ -32,7 +32,7 @@ func buildOCMAgentDeployment(ocmAgent ocmagentv1alpha1.OcmAgent) appsv1.Deployme
 
 	// Define a volumes for the config
 	tokenSecretVolumeName := ocmAgent.Spec.TokenSecret
-	configVolumeName := ocmAgent.Spec.OcmAgentConfig
+	configVolumeName := ocmAgent.Name
 	trustedCaVolumeName := oah.TrustedCaBundleConfigMapName
 	var secretVolumeSourceDefaultMode int32 = 0640
 	var configVolumeSourceDefaultMode int32 = 0644
@@ -53,7 +53,7 @@ func buildOCMAgentDeployment(ocmAgent ocmagentv1alpha1.OcmAgent) appsv1.Deployme
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: ocmAgent.Spec.OcmAgentConfig,
+						Name: ocmAgent.Name,
 					},
 					DefaultMode: &configVolumeSourceDefaultMode,
 				},
@@ -205,11 +205,11 @@ func buildOCMAgentDeployment(ocmAgent ocmagentv1alpha1.OcmAgent) appsv1.Deployme
 func buildOCMAgentArgs(ocmAgent ocmagentv1alpha1.OcmAgent) []string {
 	accessTokenPath := filepath.Join(oah.OCMAgentSecretMountPath, ocmAgent.Spec.TokenSecret,
 		oah.OCMAgentAccessTokenSecretKey)
-	configServicesPath := filepath.Join(oah.OCMAgentConfigMountPath, ocmAgent.Spec.OcmAgentConfig,
+	configServicesPath := filepath.Join(oah.OCMAgentConfigMountPath, ocmAgent.Name,
 		oah.OCMAgentConfigServicesKey)
-	configURLPath := filepath.Join(oah.OCMAgentConfigMountPath, ocmAgent.Spec.OcmAgentConfig,
+	configURLPath := filepath.Join(oah.OCMAgentConfigMountPath, ocmAgent.Name,
 		oah.OCMAgentConfigURLKey)
-	clusterIDPath := filepath.Join(oah.OCMAgentConfigMountPath, ocmAgent.Spec.OcmAgentConfig,
+	clusterIDPath := filepath.Join(oah.OCMAgentConfigMountPath, ocmAgent.Name,
 		oah.OCMAgentConfigClusterID)
 	command := []string{
 		oah.OCMAgentCommand,
