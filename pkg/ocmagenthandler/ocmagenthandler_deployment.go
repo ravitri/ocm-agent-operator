@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	ocmagentv1alpha1 "github.com/openshift/ocm-agent-operator/api/v1alpha1"
+	"github.com/openshift/ocm-agent-operator/pkg/consts/ocmagenthandler"
 	oah "github.com/openshift/ocm-agent-operator/pkg/consts/ocmagenthandler"
 )
 
@@ -32,7 +33,7 @@ func buildOCMAgentDeployment(ocmAgent ocmagentv1alpha1.OcmAgent) appsv1.Deployme
 
 	// Define a volumes for the config
 	tokenSecretVolumeName := ocmAgent.Spec.TokenSecret
-	configVolumeName := ocmAgent.Name
+	configVolumeName := ocmAgent.Name + ocmagenthandler.ConfigMapSuffix
 	trustedCaVolumeName := oah.TrustedCaBundleConfigMapName
 	var secretVolumeSourceDefaultMode int32 = 0640
 	var configVolumeSourceDefaultMode int32 = 0644
@@ -100,7 +101,7 @@ func buildOCMAgentDeployment(ocmAgent ocmagentv1alpha1.OcmAgent) appsv1.Deployme
 		{Name: "HTTPS_PROXY"},
 		{Name: "NO_PROXY"},
 		{Name: "OCM_AGENT_SECRET_NAME", Value: ocmAgent.Name},
-		{Name: "OCM_AGENT_CONFIGMAP_NAME", Value: ocmAgent.Name},
+		{Name: "OCM_AGENT_CONFIGMAP_NAME", Value: ocmAgent.Name + ocmagenthandler.ConfigMapSuffix},
 	}
 
 	// Sort volume slices by name to keep the sequence stable.
@@ -409,7 +410,7 @@ func (o *ocmAgentHandler) buildEnvVars(ocmAgent ocmagentv1alpha1.OcmAgent) ([]co
 	envVars = append(envVars, corev1.EnvVar{Name: "HTTPS_PROXY", Value: proxyStatus.HTTPSProxy})
 	envVars = append(envVars, corev1.EnvVar{Name: "NO_PROXY", Value: proxyStatus.NoProxy})
 	envVars = append(envVars, corev1.EnvVar{Name: "OCM_AGENT_SECRET_NAME", Value: ocmAgent.Name})
-	envVars = append(envVars, corev1.EnvVar{Name: "OCM_AGENT_CONFIGMAP_NAME", Value: ocmAgent.Name})
+	envVars = append(envVars, corev1.EnvVar{Name: "OCM_AGENT_CONFIGMAP_NAME", Value: ocmAgent.Name + ocmagenthandler.ConfigMapSuffix})
 
 	return envVars, nil
 }

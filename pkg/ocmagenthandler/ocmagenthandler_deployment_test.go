@@ -56,10 +56,10 @@ var _ = Describe("OCM Agent Deployment Handler", func() {
 			Expect(deployment.Spec.Template.Spec.Volumes).NotTo(BeEmpty())
 			// This is a little brittle based on the naming conventions used in the testOcmAgent
 			Expect(deployment.Spec.Template.Spec.Volumes[0].Name).To(Equal(testOcmAgent.Spec.TokenSecret))
-			Expect(deployment.Spec.Template.Spec.Volumes[1].Name).To(Equal(testOcmAgent.Name))
+			Expect(deployment.Spec.Template.Spec.Volumes[1].Name).To(Equal(testOcmAgent.Name + testconst.TestConfigMapSuffix))
 			Expect(deployment.Spec.Template.Spec.Volumes[2].Name).To(Equal(ocmagenthandler.TrustedCaBundleConfigMapName))
 			Expect(deployment.Spec.Template.Spec.Containers[0].VolumeMounts[0].Name).To(Equal(testOcmAgent.Spec.TokenSecret))
-			Expect(deployment.Spec.Template.Spec.Containers[0].VolumeMounts[1].Name).To(Equal(testOcmAgent.Name))
+			Expect(deployment.Spec.Template.Spec.Containers[0].VolumeMounts[1].Name).To(Equal(testOcmAgent.Name + testconst.TestConfigMapSuffix))
 			Expect(deployment.Spec.Template.Spec.Containers[0].VolumeMounts[2].Name).To(Equal(ocmagenthandler.TrustedCaBundleConfigMapName))
 
 			// make sure LivenessProbe is part of deployment config and has defned path, port, url and scheme
@@ -96,10 +96,10 @@ var _ = Describe("OCM Agent Deployment Handler", func() {
 			Expect(deployment.Spec.Template.Spec.Volumes).NotTo(BeEmpty())
 			// This is a little brittle based on the naming conventions used in the testOcmAgent
 			Expect(deployment.Spec.Template.Spec.Volumes[0].Name).To(Equal(testHSOcmAgent.Spec.TokenSecret))
-			Expect(deployment.Spec.Template.Spec.Volumes[1].Name).To(Equal(testHSOcmAgent.Name))
+			Expect(deployment.Spec.Template.Spec.Volumes[1].Name).To(Equal(testHSOcmAgent.Name + testconst.TestConfigMapSuffix))
 			Expect(deployment.Spec.Template.Spec.Volumes[2].Name).To(Equal(ocmagenthandler.TrustedCaBundleConfigMapName))
 			Expect(deployment.Spec.Template.Spec.Containers[0].VolumeMounts[0].Name).To(Equal(testHSOcmAgent.Spec.TokenSecret))
-			Expect(deployment.Spec.Template.Spec.Containers[0].VolumeMounts[1].Name).To(Equal(testHSOcmAgent.Name))
+			Expect(deployment.Spec.Template.Spec.Containers[0].VolumeMounts[1].Name).To(Equal(testHSOcmAgent.Name + testconst.TestConfigMapSuffix))
 			Expect(deployment.Spec.Template.Spec.Containers[0].VolumeMounts[2].Name).To(Equal(ocmagenthandler.TrustedCaBundleConfigMapName))
 
 			// make sure LivenessProbe is part of deployment config and has defned path, port, url and scheme
