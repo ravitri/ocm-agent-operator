@@ -54,7 +54,7 @@ func buildOCMAgentDeployment(ocmAgent ocmagentv1alpha1.OcmAgent) appsv1.Deployme
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: ocmAgent.Name,
+						Name: ocmAgent.Name + ocmagenthandler.ConfigMapSuffix,
 					},
 					DefaultMode: &configVolumeSourceDefaultMode,
 				},
@@ -204,13 +204,16 @@ func buildOCMAgentDeployment(ocmAgent ocmagentv1alpha1.OcmAgent) appsv1.Deployme
 // buildOCMAgentArgs returns the full command argument list to run the OCM Agent
 // in a deployment.
 func buildOCMAgentArgs(ocmAgent ocmagentv1alpha1.OcmAgent) []string {
+
+	configmapName := ocmAgent.Name + ocmagenthandler.ConfigMapSuffix
+
 	accessTokenPath := filepath.Join(oah.OCMAgentSecretMountPath, ocmAgent.Spec.TokenSecret,
 		oah.OCMAgentAccessTokenSecretKey)
-	configServicesPath := filepath.Join(oah.OCMAgentConfigMountPath, ocmAgent.Name,
+	configServicesPath := filepath.Join(oah.OCMAgentConfigMountPath, configmapName,
 		oah.OCMAgentConfigServicesKey)
-	configURLPath := filepath.Join(oah.OCMAgentConfigMountPath, ocmAgent.Name,
+	configURLPath := filepath.Join(oah.OCMAgentConfigMountPath, configmapName,
 		oah.OCMAgentConfigURLKey)
-	clusterIDPath := filepath.Join(oah.OCMAgentConfigMountPath, ocmAgent.Name,
+	clusterIDPath := filepath.Join(oah.OCMAgentConfigMountPath, configmapName,
 		oah.OCMAgentConfigClusterID)
 	command := []string{
 		oah.OCMAgentCommand,
