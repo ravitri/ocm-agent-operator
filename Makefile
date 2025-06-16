@@ -2,6 +2,7 @@ FIPS_ENABLED=true
 include boilerplate/generated-includes.mk
 
 OPERATOR_NAME=ocm-agent-operator
+CLI_NAME=ocm-agent
 
 .PHONY: boilerplate-update
 boilerplate-update: ## Make boilerplate update itself
@@ -19,6 +20,14 @@ run-verbose:
 .PHONY: tools
 tools: ## Install local go tools for OAO
 	cat tools.go | grep _ | awk -F'"' '{print $$2}' | xargs -tI % go install %
+
+.PHONY: ocm-agent-build
+ocm-agent-build: ## Build ocm-agent binary
+	GOOS=linux go build -o build/ocm-agent/_output/bin/$(CLI_NAME) ./cmd/ocm-agent
+
+.PHONY: clean
+clean:
+	rm -f build/_output/bin/* build/ocm-agent/_output/bin/*
 
 .PHONY: help
 help: ## Show this help screen.
